@@ -269,6 +269,7 @@ function togglePause() {
 }
 
 function loop(ts) {
+  if (gameOver || paused) return;
   const dt = ts - lastTime;
   lastTime = ts;
   dropAccum += dt;
@@ -281,6 +282,9 @@ function loop(ts) {
     }
   }
   draw();
+  // endGame() puede dispararse dentro de este frame (lockPiece → spawn);
+  // cancelAnimationFrame ahí no sirve porque el frame actual ya se consumió.
+  if (gameOver) return;
   animId = requestAnimationFrame(loop);
 }
 
