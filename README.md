@@ -86,6 +86,8 @@ Después abre `http://localhost:8000` en el navegador.
 | `Espacio` | Hard drop (caída instantánea)     |
 | `P`       | Pausar / reanudar                 |
 
+Además, el switch **LIGHT** (arriba a la derecha) alterna entre el tema oscuro (por defecto) y el claro. Los colores se definen como variables CSS (`:root` para dark, `[data-theme="light"]` para light) y el canvas los lee desde JS; el cambio se aplica al instante, incluso en pausa o Game Over.
+
 ---
 
 ## Cómo funciona
