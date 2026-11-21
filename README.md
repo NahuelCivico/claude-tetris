@@ -48,6 +48,17 @@ Es una versión jugable del Tetris clásico con todas las mecánicas que esperar
 - **Menú de pausa** (`P` o `Esc`) con opciones **Reanudar**, **Reiniciar** (nueva partida sin recargar), **Ver controles** y selector de **Nivel inicial** (1–10) para la próxima partida. Mientras el menú está abierto, los inputs del juego quedan bloqueados, y al reanudar se descartan las teclas mantenidas para evitar movimientos accidentales.
 - **Game Over** con opción de reinicio.
 - **Skins visuales** seleccionables al vuelo: **Retro**, **Neon**, **Pastel** y **Pixel art** (la preferencia se guarda en `localStorage`).
+- **Contador de combo**: piezas consecutivas que limpian líneas (vuelve a 0 cuando una pieza no limpia nada).
+- **Tabla de records local** (top 5), ver [Records](#records).
+
+### Records
+
+- Al abrir el juego aparece una **pantalla de inicio** con la tabla de records; la partida empieza con **Jugar** o `Enter`.
+- Se guardan las **5 mejores puntuaciones** en `localStorage` (clave `tetris.records`) con nombre, puntos, líneas, mejor combo y fecha.
+- En el **Game Over**, si la puntuación entra en el top 5 aparece un campo para escribir el nombre (máx. 12 caracteres; `Enter` o **Guardar**; vacío → "Anónimo") y la nueva fila se resalta en la tabla. El récord se guarda en el momento del Game Over (como "Anónimo"), así que no se pierde aunque se cierre la pestaña; si se reinicia sin pulsar Guardar se usa lo escrito en el campo.
+- También se muestran el **mejor combo** y las **líneas máximas** de todas las partidas, aunque no hayan entrado en el top.
+- El botón **Resetear records** de la pantalla de inicio borra todo (pide un segundo click de confirmación).
+- Si `localStorage` no está disponible o los datos están corruptos, el juego funciona igual con la tabla vacía.
 
 ---
 
@@ -91,6 +102,7 @@ Después abre `http://localhost:8000` en el navegador.
 | `↓`       | Soft drop (bajar más rápido)      |
 | `Espacio` | Hard drop (caída instantánea)     |
 | `P` / `Esc` | Abrir / cerrar el menú de pausa |
+| `Enter`   | Jugar (inicio) / reiniciar (Game Over) |
 
 Con el menú de pausa abierto, `↑` / `↓` (o `Tab`) recorren sus opciones y `Enter` / `Espacio` las activan; el resto de teclas no llega al juego.
 
@@ -119,6 +131,7 @@ Define la estructura visual:
 
 - Un `<canvas id="board">` de **300 × 600** píxeles donde se renderiza el tablero.
 - Un panel lateral con `SCORE`, `LINES`, `LEVEL`, vista de la siguiente pieza y la lista de controles.
+- Una pantalla de inicio (`#start-screen`) con el botón **Jugar** y la tabla de records.
 - Un overlay para **GAME OVER** y un menú de pausa (`#pause-menu`) independiente con sus botones y el selector de nivel inicial.
 
 ### 2. `style.css`
@@ -142,6 +155,8 @@ Contiene toda la lógica del juego. A grandes rasgos:
 ### Flujo del juego
 
 ```
+carga → pantalla de inicio (renderStartRecords)  ── Jugar / Enter ──▶ init()
+
 init()
   ├─ createBoard()                  → matriz vacía
   ├─ next = randomPiece()
