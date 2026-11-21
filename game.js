@@ -13,6 +13,11 @@ const COLORS = [
   '#e57373', // Z - red
   '#90caf9', // J - pale blue
   '#ffb74d', // L - orange
+  '#f06292', // + - pink
+  '#4db6ac', // U - teal
+  '#aed581', // Y - lime
+  '#ffffff', // 1×1 - white
+  '#a1887f', // 3×3 hueca - brown
 ];
 
 const COLORS_LIGHT = [
@@ -24,6 +29,11 @@ const COLORS_LIGHT = [
   '#e53935', // Z
   '#1e88e5', // J
   '#fb8c00', // L
+  '#d81b60', // +
+  '#00897b', // U
+  '#7cb342', // Y
+  '#546e7a', // 1×1
+  '#6d4c41', // 3×3 hueca
 ];
 
 const PIECES = [
@@ -35,7 +45,22 @@ const PIECES = [
   [[5,5,0],[0,5,5],[0,0,0]],                  // Z
   [[6,0,0],[6,6,6],[0,0,0]],                  // J
   [[0,0,7],[7,7,7],[0,0,0]],                  // L
+  // Piezas especiales (no estándar)
+  [[0,8,0],[8,8,8],[0,8,0]],                  // + (pentominó)
+  [[9,0,9],[9,9,9],[0,0,0]],                  // U (pentominó)
+  [[0,0,0,0],[10,10,10,10],[0,10,0,0],[0,0,0,0]], // Y (pentominó)
+  [[11]],                                      // 1×1 (recompensa tras Tetris)
+  [[12,12,12],[12,0,12],[12,12,12]],          // 3×3 hueca (reto)
 ];
+
+const STANDARD_TYPES = [1, 2, 3, 4, 5, 6, 7];
+const PENTOMINO_TYPES = [8, 9, 10];
+const SINGLE_TYPE = 11;
+const HOLLOW_TYPE = 12;
+
+// Probabilidades de aparición de las piezas especiales
+const CHALLENGE_CHANCE = 0.06; // 3×3 hueca
+const SPECIAL_CHANCE = 0.12;   // pentominó (+, U, Y)
 
 const LINE_SCORES = [0, 100, 300, 500, 800];
 
@@ -56,16 +81,28 @@ const themeToggle = document.getElementById('theme-toggle');
 let theme = 'dark';
 let gridColor = '#22222e';
 
-let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, rewardPending;
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
 }
 
-function randomPiece() {
-  const type = Math.floor(Math.random() * 7) + 1;
+function makePiece(type) {
   const shape = PIECES[type].map(row => [...row]);
   return { type, shape, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0 };
+}
+
+function pick(list) {
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+function randomPiece() {
+  const roll = Math.random();
+  let type;
+  if (roll < CHALLENGE_CHANCE) type = HOLLOW_TYPE;
+  else if (roll < CHALLENGE_CHANCE + SPECIAL_CHANCE) type = pick(PENTOMINO_TYPES);
+  else type = pick(STANDARD_TYPES);
+  return makePiece(type);
 }
 
 function collide(shape, ox, oy) {
@@ -119,6 +156,7 @@ function clearLines() {
       r++;
     }
   }
+  if (cleared === 4) rewardPending = true;
   if (cleared) {
     lines += cleared;
     score += (LINE_SCORES[cleared] || 0) * level;
@@ -159,7 +197,9 @@ function lockPiece() {
 
 function spawn() {
   current = next;
-  next = randomPiece();
+  // Tras un Tetris, la siguiente pieza es una 1×1 de recompensa
+  next = rewardPending ? makePiece(SINGLE_TYPE) : randomPiece();
+  rewardPending = false;
   if (collide(current.shape, current.x, current.y)) {
     endGame();
   }
@@ -227,8 +267,17 @@ function drawNext() {
   const NB = 30;
   nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
   const shape = next.shape;
-  const offX = Math.floor((4 - shape[0].length) / 2);
-  const offY = Math.floor((4 - shape.length) / 2);
+  // Bounding box de las celdas ocupadas, para centrar la pieza visualmente
+  let minR = Infinity, maxR = -1, minC = Infinity, maxC = -1;
+  for (let r = 0; r < shape.length; r++)
+    for (let c = 0; c < shape[r].length; c++)
+      if (shape[r][c]) {
+        minR = Math.min(minR, r); maxR = Math.max(maxR, r);
+        minC = Math.min(minC, c); maxC = Math.max(maxC, c);
+      }
+  const gridW = nextCanvas.width / NB, gridH = nextCanvas.height / NB;
+  const offX = (gridW - (maxC - minC + 1)) / 2 - minC;
+  const offY = (gridH - (maxR - minR + 1)) / 2 - minR;
   for (let r = 0; r < shape.length; r++)
     for (let c = 0; c < shape[r].length; c++)
       drawBlock(nextCtx, offX + c, offY + r, shape[r][c], NB);
@@ -295,6 +344,7 @@ function init() {
   level = 1;
   paused = false;
   gameOver = false;
+  rewardPending = false;
   dropInterval = 1000;
   dropAccum = 0;
   lastTime = performance.now();
