@@ -46,6 +46,7 @@ Es una versión jugable del Tetris clásico con todas las mecánicas que esperar
 - **Sistema de puntuación** clásico de Tetris (100 / 300 / 500 / 800 multiplicado por nivel).
 - **Niveles** que aumentan cada 10 líneas y aceleran la caída.
 - **Pausa** y **Game Over** con opción de reinicio.
+- **Skins visuales** seleccionables al vuelo: **Retro**, **Neon**, **Pastel** y **Pixel art** (la preferencia se guarda en `localStorage`).
 
 ---
 
@@ -91,6 +92,17 @@ Después abre `http://localhost:8000` en el navegador.
 | `P`       | Pausar / reanudar                 |
 
 Además, el switch **LIGHT** (arriba a la derecha) alterna entre el tema oscuro (por defecto) y el claro. Los colores se definen como variables CSS (`:root` para dark, `[data-theme="light"]` para light) y el canvas los lee desde JS; el cambio se aplica al instante, incluso en pausa o Game Over.
+
+El selector **SKIN** (arriba a la izquierda) cambia la apariencia de los bloques sin recargar la página:
+
+| Skin        | Aspecto                                                                   |
+| ----------- | ------------------------------------------------------------------------- |
+| `Retro`     | Bloques cuadrados con colores planos (estilo original, por defecto)       |
+| `Neon`      | Fondo negro y bloques con _glow_ (`shadowBlur` del canvas)                |
+| `Pastel`    | Colores suaves y esquinas redondeadas (`ctx.roundRect` con _fallback_)    |
+| `Pixel art` | Textura de _dithering_ sobre cada bloque, con bordes de luz y sombra      |
+
+La skin elegida se guarda en `localStorage` (clave `tetris.skin`) y es compatible con el tema claro/oscuro.
 
 ---
 
@@ -180,8 +192,11 @@ Algunos parámetros fáciles de tunear en `game.js`:
 | `ROWS`         | Filas del tablero                        | `20`                  |
 | `BLOCK`        | Tamaño en píxeles de cada celda          | `30`                  |
 | `COLORS`       | Paleta de colores por tipo de pieza      | 12 colores            |
+| `SKINS`        | Skins visuales: paletas (dark / light), fondo, grilla y función `drawBlock` | `retro`, `neon`, `pastel`, `pixel` |
 | `LINE_SCORES`  | Puntos por 1, 2, 3 o 4 líneas eliminadas | `[0,100,300,500,800]` |
 | `dropInterval` | Velocidad inicial de caída en ms         | `1000`                |
+
+> Para añadir una skin nueva, agrega una entrada a `SKINS` con `colors`, `colorsLight` (13 entradas, índice 0 = `null`), una función `drawBlock(context, px, py, size, color)` y, opcionalmente, `background` y `grid`; luego añade su `<option>` en `#skin-select`.
 
 > Si cambias `COLS`, `ROWS` o `BLOCK`, recuerda ajustar también `width` y `height` del `<canvas id="board">` en `index.html` para que coincida (`COLS × BLOCK` × `ROWS × BLOCK`).
 
